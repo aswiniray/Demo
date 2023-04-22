@@ -1,10 +1,9 @@
 package main
 
 import (
-    "context"
     "fmt"
     "os"
-    "github.com/google/go-github/v41/github"
+    "github.com/google/go-github/v52/github"
     "github.com/dgrijalva/jwt-go"
 )
 
@@ -14,28 +13,35 @@ func main() {
     installationID := os.Getenv("GITHUB_INSTALLATION_ID")
     privateKey := os.Getenv("GITHUB_PRIVATE_KEY")
 
-    // Create a new GitHub client.
+    // Create a new JWT claims object.
+    claims := jwt.NewClaims()
+    claims.Set("app_id", appID)
+    claims.Set("installation_id", installationID)
+
+    // Create a new JWT signing algorithm.
+    signingAlgorithm := jwt.SigningMethodHS256
+
+    // Create a new JWT token.
+    token := jwt.NewWithClaims(signingAlgorithm, claims)
+
+    // Sign the JWT token with the private key.
+    token.Sign(privateKey)
+
+    // Get the GitHub client.
     client := github.NewClient(nil)
 
-    // Create a new JWT token with the app ID, installation ID, and private key.
-    token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.Claims{
-        "app_id": appID,
-        "installation_id": installationID,
-    })
-    tokenString, err := token.SignedString([]byte(privateKey))
-    if err != nil {
-        panic(err)
+    // Create a new request to create an installation access token.
+    request := github.NewCreateInstallationAccessTokenRequest{
+        Token: token.Raw,
     }
 
-    // Set the authorization header with the JWT token.
-    ctx := context.WithValue(context.Background(), github.Authorization, "Bearer "+tokenString)
-
-    // Get the access token from GitHub.
-    access, _, err := client.Apps.GetInstallationAccessToken(ctx, appID, installationID)
+    // Send the request to create the installation access token.
+    response, err := client.Apps.CreateInstallationAccessToken(request)
     if err != nil {
-        panic(err)
+        fmt.Println(err)
+        return
     }
 
-    // Print the access token.
-    fmt.Println(access.Token)
+    // Print the installation access token.
+    fmt.Println(response.Token)
 }
