@@ -11,13 +11,19 @@ func main() {
     // Get the app ID, installation ID, and private key from environment variables.
     appID := os.Getenv("GITHUB_APP_ID")
     installationID := os.Getenv("GITHUB_INSTALLATION_ID")
-    privatePEMKey := os.Getenv("GITHUB_PRIVATE_KEY_PEM")
+    privatePEMKeyPath := os.Getenv("GITHUB_PRIVATE_KEY_PEM_PATH")
+
+    // Read the private key from the file.
+    privatePEMKey, err := os.ReadFile(privatePEMKeyPath)
+    if err != nil {
+        panic(err)
+    }
 
     // Create a new GitHub client.
     client := github.NewClient(nil)
 
     // Create a new JWT transport using the app ID, installation ID, and private key.
-    transport, err := github.NewAppsTransportKeyFromFile(client.Transport, appID, installationID, privatePEMKey)
+    transport, err := github.NewAppsTransportKeyFromPEM(client.Transport, appID, installationID, privatePEMKey)
     if err != nil {
         panic(err)
     }
@@ -37,3 +43,4 @@ func main() {
     // Print the access token.
     fmt.Println(accessToken.Token)
 }
+
