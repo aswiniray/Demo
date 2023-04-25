@@ -1,48 +1,40 @@
+
 package main
 
 import (
-	"context"
-	"crypto/rsa"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-
-	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/google/go-github/v52/github"
-	"golang.org/x/oauth2"
+    "context"
+    "fmt"
+    "github.com/bradleyfalzon/ghinstallation"
+    "github.com/google/go-github/v39/github"
+    "golang.org/x/oauth2"
 )
 
 func main() {
-	appID := os.Getenv("APP_ID")
-	instID := os.Getenv("INSTALLATION_ID")
-	keyPath := os.Getenv("PRIVATE_KEY_PATH")
+    // Replace with your app ID
+    appID := int64(12345)
 
-	keyData, err := ioutil.ReadFile(keyPath)
-	if err != nil {
-		log.Fatalf("failed to read private key file: %v", err)
-	}
+    // Replace with your installation ID
+    installationID := int64(67890)
 
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
-	if err != nil {
-		log.Fatalf("failed to parse private key: %v", err)
-	}
+    // Replace with your private key
+    privateKey := []byte(`-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----`)
 
-	tr := http.DefaultTransport
-	it, err := ghinstallation.NewAppsTransportKeyFromFile(tr, appID, keyPath)
-	if err != nil {
-		log.Fatalf("failed to create installation transport: %v", err)
-	}
+    // Create a new transport for authentication
+    tr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, appID, installationID, privateKey)
+    if err != nil {
+        panic(err)
+    }
 
-	ctx := context.Background()
-	ts := oauth2.NewClient(ctx, it).Transport
+    // Create a new client using the authenticated transport
+    client := github.NewClient(&http.Client{Transport: tr})
 
-	client := github.NewClient(&http.Client{Transport: ts})
+    // Use the client to create an installation token
+    token, _, err := client.Apps.CreateInstallationToken(context.Background(), nil)
+    if err != nil {
+        panic(err)
+    }
 
-	token, _, err := client.Apps.CreateInstallationToken(ctx, instID, nil)
-	if err != nil {
-		log.Fatalf("failed to create installation token: %v", err)
-	}
-
-	fmt.Println(token.GetToken())
+    fmt.Printf("Token: %v\n", token.GetToken())
 }
