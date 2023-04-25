@@ -1,35 +1,37 @@
+
 package main
 
 import (
-    "fmt"
-    "os"
-    "github.com/google/go-github/v35/github"
+  "fmt"
+  "os"
+  "github.com/google/go-github/v32/github"
+  "github.com/nabeken/ghinstallation"
 )
 
 func main() {
-    // Get the app ID, installation ID, and private key from environment variables.
-    appID := os.Getenv("GITHUB_APP_ID")
-    installationID := os.Getenv("GITHUB_INSTALLATION_ID")
-    privatePEM := os.Getenv("GITHUB_PRIVATE_KEY")
+  // Get the app ID, installation ID, and private key from the environment.
+  appID := os.Getenv("GITHUB_APP_ID")
+  installationID := os.Getenv("GITHUB_INSTALLATION_ID")
+  privateKeyPath := os.Getenv("GITHUB_PRIVATE_KEY_PATH")
 
-    // Create a new GitHub client.
-    client := github.NewClient(nil)
+  // Create a new GitHub client.
+  client := github.NewClient(nil)
 
-    // Set the authentication header.
-    client.SetAuthorization("Bearer " + privatePEM)
+  // Create a new ghinstallation client.
+  ghinstallationClient := ghinstallation.NewClient(client)
 
-    // Create a new installation access token request.
-    body := github.InstallationAccessTokenRequest{
-        Name: "My Installation Token",
-    }
+  // Create a new installation token request.
+  request := ghinstallation.NewCreateInstallationTokenRequest{
+    AppID: appID,
+     InstallationID: installationID,
+  }
 
-    // Create a new installation access token.
-    accessToken, _, err := client.Apps.CreateInstallationAccessToken(appID, installationID, &body)
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
+  // Create the installation token.
+  token, err := ghinstallationClient.CreateInstallationToken(request)
+  if err != nil {
+    panic(err)
+  }
 
-    // Print the installation access token.
-    fmt.Println(accessToken.Token)
+  // Print the installation token.
+  fmt.Println(token.Token)
 }
